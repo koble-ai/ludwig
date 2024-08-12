@@ -52,6 +52,8 @@ class WandbCallback(Callback):
                 sync_tensorboard=True,
                 dir=output_directory,
             )
+        else:
+            self.default = False
         self.run.save(os.path.join(experiment_directory, "*"))
 
 
