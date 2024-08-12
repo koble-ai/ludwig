@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 @PublicAPI
 class WandbCallback(Callback):
     """Class that defines the methods necessary to hook into process."""
+    run = None
+    default = True
+
+    def __init__(self, run):
+        if run:
+            self.run = run
+            self.default = False
 
     def on_train_init(
         self,
@@ -38,35 +45,36 @@ class WandbCallback(Callback):
         resume_directory,
     ):
         logger.info("wandb.on_train_init() called...")
-        wandb.init(
-            project=os.getenv("WANDB_PROJECT", experiment_name),
-            name=model_name,
-            sync_tensorboard=True,
-            dir=output_directory,
-        )
-        wandb.save(os.path.join(experiment_directory, "*"))
+        if not self.run:
+            self.run = wandb.init(
+                project=os.getenv("WANDB_PROJECT", experiment_name),
+                name=model_name,
+                sync_tensorboard=True,
+                dir=output_directory,
+            )
+        self.run.save(os.path.join(experiment_directory, "*"))
+
 
     def on_train_start(self, model, config, *args, **kwargs):
         logger.info("wandb.on_train_start() called...")
         config = config.copy()
-        del config["input_features"]
-        del config["output_features"]
-        wandb.config.update(config)
+        self.run.config.update(config)
 
     def on_eval_end(self, trainer, progress_tracker, save_path):
         """Called from ludwig/models/model.py."""
         for key, value in progress_tracker.log_metrics().items():
-            wandb.log({key: value})
+            self.run.log({key: value})
 
     def on_epoch_end(self, trainer, progress_tracker, save_path):
         """Called from ludwig/models/model.py."""
         for key, value in progress_tracker.log_metrics().items():
-            wandb.log({key: value})
+            self.run.log({key: value})
 
     def on_visualize_figure(self, fig):
         logger.info("wandb.on_visualize_figure() called...")
-        if wandb.run:
-            wandb.log({"figure": fig})
+        if self.run:
+            self.run.log({"figure": fig})
 
     def on_train_end(self, output_directory):
-        wandb.finish()
+        if not self.default:
+            wandb.finish()
