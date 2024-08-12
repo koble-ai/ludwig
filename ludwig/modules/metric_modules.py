@@ -30,6 +30,7 @@ from torchmetrics.classification import (
     BinarySpecificity,
     MulticlassAccuracy,
     MulticlassAUROC,
+    BinaryFBetaScore,
 )
 from torchmetrics.functional.regression.r2 import _r2_score_compute, _r2_score_update
 from torchmetrics.metric import jit_distributed_available
@@ -42,6 +43,9 @@ from ludwig.constants import (  # RESPONSE,
     ACCURACY_MICRO,
     BINARY,
     BINARY_WEIGHTED_CROSS_ENTROPY,
+    BINARY_FBETA_WEIGHTED,
+    BINARY_FBETA_PRECISION,
+    BINARY_FBETA_RECALL,
     CATEGORY,
     CATEGORY_DISTRIBUTION,
     CORN,
@@ -164,6 +168,58 @@ class BinaryAUROCMetric(BinaryAUROC, LudwigMetric):
 
     def update(self, preds: Tensor, target: Tensor) -> None:
         super().update(preds, target.type(torch.int8))
+
+
+@register_metric(BINARY_FBETA_WEIGHTED, [BINARY], MAXIMIZE, PROBABILITIES)
+class BinaryFBetaWeighted(BinaryFBetaScore, LudwigMetric):
+    def __init__(self, beta: float = 1.0, **kwargs):
+        super().__init__(beta=beta)
+
+    def __iter__(self):
+        pass
+
+    @classmethod
+    def can_report(cls, feature: "OutputFeature") -> bool:  # noqa: F821
+        return True
+
+    def update(self, preds: Tensor, target: Tensor) -> None:
+        super().update(preds, target)
+
+
+@register_metric(
+    name=BINARY_FBETA_PRECISION,
+    feature_types=[BINARY],
+    objective=MAXIMIZE,
+    output_feature_tensor_name=PREDICTIONS,
+)
+class BinaryFBetaPrecision(BinaryFBetaScore, LudwigMetric):
+    def __init__(self, beta: float = 0.5, **kwargs):
+        super().__init__(beta=beta)
+
+    @classmethod
+    def can_report(cls, feature: "OutputFeature") -> bool:  # noqa: F821
+        return True
+
+    def update(self, preds: Tensor, target: Tensor) -> None:
+        super().update(preds, target)
+
+
+@register_metric(
+    name=BINARY_FBETA_RECALL,
+    feature_types=[BINARY],
+    objective=MAXIMIZE,
+    output_feature_tensor_name=PREDICTIONS,
+)
+class BinaryFBetaRecall(BinaryFBetaScore, LudwigMetric):
+    def __init__(self, beta: float = 2.0, **kwargs):
+        super().__init__(beta=beta)
+
+    @classmethod
+    def can_report(cls, feature: "OutputFeature") -> bool:  # noqa: F821
+        return True
+
+    def update(self, preds: Tensor, target: Tensor) -> None:
+        super().update(preds, target)
 
 
 @register_metric(ROC_AUC, [CATEGORY, CATEGORY_DISTRIBUTION], MAXIMIZE, PROBABILITIES)
