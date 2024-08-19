@@ -49,7 +49,7 @@ sentencepiece
 getdaft==0.1.20
 
 # requirement for various paged and 8-bit optimizers
-bitsandbytes<0.41.0
+bitsandbytes==0.43.3
 
 # new data format support
 xlwt                # excel
