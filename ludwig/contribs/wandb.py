@@ -27,13 +27,12 @@ logger = logging.getLogger(__name__)
 @PublicAPI
 class WandbCallback(Callback):
     """Class that defines the methods necessary to hook into process."""
-    run = None
-    default = True
 
-    def __init__(self, run):
-        if run:
-            self.run = run
-            self.default = False
+    def __init__(self):
+        """
+        The callback expects the wandb run to be already initialized.
+        """
+        pass
 
     def on_train_init(
         self,
@@ -45,15 +44,6 @@ class WandbCallback(Callback):
         resume_directory,
     ):
         logger.info("wandb.on_train_init() called...")
-        if not self.run:
-            self.run = wandb.init(
-                project=os.getenv("WANDB_PROJECT", experiment_name),
-                name=model_name,
-                sync_tensorboard=True,
-                dir=output_directory,
-            )
-        else:
-            self.default = False
         self.run.save(os.path.join(experiment_directory, "*"))
 
 
@@ -78,5 +68,4 @@ class WandbCallback(Callback):
             self.run.log({"figure": fig})
 
     def on_train_end(self, output_directory):
-        if not self.default:
-            wandb.finish()
+        pass
