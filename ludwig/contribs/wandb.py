@@ -28,12 +28,6 @@ logger = logging.getLogger(__name__)
 class WandbCallback(Callback):
     """Class that defines the methods necessary to hook into process."""
 
-    def __init__(self):
-        """
-        The callback expects the wandb run to be already initialized.
-        """
-        pass
-
     def on_train_init(
         self,
         base_config,
@@ -44,28 +38,27 @@ class WandbCallback(Callback):
         resume_directory,
     ):
         logger.info("wandb.on_train_init() called...")
-        self.run.save(os.path.join(experiment_directory, "*"))
-
+        wandb.save(os.path.join(experiment_directory, "*"))
 
     def on_train_start(self, model, config, *args, **kwargs):
         logger.info("wandb.on_train_start() called...")
         config = config.copy()
-        self.run.config.update(config)
+        wandb.config.update(config)
 
     def on_eval_end(self, trainer, progress_tracker, save_path):
         """Called from ludwig/models/model.py."""
         for key, value in progress_tracker.log_metrics().items():
-            self.run.log({key: value})
+            wandb.log({key: value})
 
     def on_epoch_end(self, trainer, progress_tracker, save_path):
         """Called from ludwig/models/model.py."""
         for key, value in progress_tracker.log_metrics().items():
-            self.run.log({key: value})
+            wandb.log({key: value})
 
     def on_visualize_figure(self, fig):
         logger.info("wandb.on_visualize_figure() called...")
-        if self.run:
-            self.run.log({"figure": fig})
+        if wandb.run:
+            wandb.log({"figure": fig})
 
     def on_train_end(self, output_directory):
-        pass
+        wandb.finish()
