@@ -17,6 +17,7 @@ import logging
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
+import tiktoken
 import torch
 import torchtext
 
@@ -1106,6 +1107,26 @@ tokenizer_registry.update(
 TORCHSCRIPT_COMPATIBLE_TOKENIZERS.update(TORCHTEXT_0_12_0_TOKENIZERS)
 
 
+class OpenAITokenizer:
+
+
+    def __init__(self):
+        self.encoding = tiktoken.get_encoding("cl100k_base")
+
+    def forward(self, v: Union[str, List[str], torch.Tensor]) -> Any:
+        return self.encoding.encode(v)
+    # def get_vocab(self) -> Dict[str, int]:
+    #     return self.encoding.
+    #
+    # def get_vocab(self) -> Dict[str, int]:
+    #     return self.vocab
+    #
+    # def get_pad_token(self) -> str:
+    #     return self.pad_token
+    #
+    # def get_unk_token(self) -> str:
+    #     return self.unk_token
+
 class BERTTokenizer(torch.nn.Module):
     def __init__(
         self,
@@ -1229,6 +1250,7 @@ class BERTTokenizer(torch.nn.Module):
 tokenizer_registry.update(
     {
         "bert": BERTTokenizer,
+        "openai": OpenAITokenizer
     }
 )
 TORCHSCRIPT_COMPATIBLE_TOKENIZERS.update(TORCHTEXT_0_13_0_TOKENIZERS)

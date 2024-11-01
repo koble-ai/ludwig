@@ -672,6 +672,8 @@ class BERTEncoder(HFTextEncoder):
         self.max_sequence_length = max_sequence_length
 
     def forward(self, inputs: torch.Tensor, mask: Optional[torch.Tensor] = None) -> EncoderOutputDict:
+        # inputs -> discard
+        # return -> embedding
         if mask is not None:
             mask = mask.to(torch.int32)
         transformer_outputs = self.transformer.module(
@@ -715,6 +717,83 @@ class BERTEncoder(HFTextEncoder):
     def input_dtype(self) -> torch.dtype:
         return torch.int32
 
+@DeveloperAPI
+@register_encoder("openai", TEXT)
+class OpenAIEncoder(HFTextEncoder):
+    DEFAULT_MODEL_NAME = "text-embedding-3-small"
+
+    # OpenAiEmbeddingService(model="text-embedding-3-small")
+
+    def __init__(
+        self,
+        max_sequence_length: int,
+        use_pretrained: bool = True,
+        pretrained_model_name_or_path: str = DEFAULT_MODEL_NAME,
+        saved_weights_in_checkpoint: bool = False,
+        trainable: bool = False,
+        adapter: Optional[BaseAdapterConfig] = None,
+        reduce_output: str = "cls_pooled",
+        vocab_size: int = 30522,
+        hidden_size: int = 768,
+        num_hidden_layers: int = 12,
+        num_attention_heads: int = 12,
+        intermediate_size: int = 3072,
+        hidden_act: Union[str, Callable] = "gelu",
+        hidden_dropout_prob: float = 0.1,
+        attention_probs_dropout_prob: float = 0.1,
+        max_position_embeddings: int = 512,
+        type_vocab_size: int = 2,
+        initializer_range: float = 0.02,
+        layer_norm_eps: float = 1e-12,
+        pad_token_id: int = 0,
+        gradient_checkpointing: bool = False,
+        position_embedding_type: str = "absolute",
+        classifier_dropout: float = None,
+        pretrained_kwargs: Dict = None,
+        encoder_config=None,
+        openai_api_key=None,
+        **kwargs,
+    ):
+        super().__init__()
+        from openai import OpenAI
+        self.client = OpenAI(api_key=openai_api_key)
+
+
+    def forward(self, inputs: torch.Tensor, mask: Optional[torch.Tensor] = None) -> EncoderOutputDict:
+        # inputs -> discard
+        # return -> embedding
+        hidden = self.client.embeddings.create(input=inputs, model=self.model).data[0].embedding
+
+
+        return {ENCODER_OUTPUT: hidden}
+
+    @staticmethod
+    def get_schema_cls() -> Type[BaseEncoderConfig]:
+        return BERTConfig
+
+    @property
+    def input_shape(self) -> torch.Size:
+        return torch.Size([self.max_sequence_length])
+
+    # TODO(shreya): Confirm that this is it
+    @property
+    def output_shape(self) -> torch.Size:
+        if self.reduce_output is None:
+            # Subtract 2 to remove CLS and PAD tokens added by BERT tokenizer.
+            return torch.Size(
+                [
+                    self.max_sequence_length - 2,
+                    self.transformer.module.config.hidden_size,
+                ]
+            )
+        elif self.reduce_output == "concat":
+            # add the -2 to account of start and end tokens.
+            return torch.Size([self.transformer.module.config.hidden_size * (self.max_sequence_length - 2)])
+        return torch.Size([self.transformer.module.config.hidden_size])
+
+    @property
+    def input_dtype(self) -> torch.dtype:
+        return torch.int32
 
 @DeveloperAPI
 @register_encoder("xlm", TEXT)

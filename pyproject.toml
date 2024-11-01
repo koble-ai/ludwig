@@ -8,3 +8,14 @@ order_by_type = "False"
 [tool.black]
 line-length = 120
 exclude = "./python/"
+
+[tool.poetry]
+name = "ludwig"
+version = "0.1.0"
+description = ""
+authors = ["raul <raul@koble.ai>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
