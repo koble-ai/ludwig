@@ -1278,7 +1278,7 @@ def get_hf_tokenizer(pretrained_model_name_or_path, **kwargs):
     hf_name = pretrained_model_name_or_path
     # use_fast=False to leverage python class inheritance
     # cannot tokenize HF tokenizers directly because HF lacks strict typing and List[str] cannot be traced
-    hf_tokenizer = load_pretrained_hf_tokenizer(hf_name, use_fast=False, trust_remote_code=True)
+    hf_tokenizer = load_pretrained_hf_tokenizer(hf_name, use_fast=True, trust_remote_code=True)
 
     torchtext_tokenizer = None
     if "bert" in TORCHSCRIPT_COMPATIBLE_TOKENIZERS and any(
